@@ -110,10 +110,10 @@ To use *t* threads, add the option `-t *t*` to the command above.
 [include/concurrentqueue.h](include/concurrentqueue.h) is included in this repository under the terms of the author's license, which is listed in that file and at the [`moodycamel::ConcurrentQueue`][concurrentqueue] repository.
 All other code is provided by the author under the terms of the GPLv3 license.
 
-[agdmhs-algorun]: TODO
-[algorun]: //algorun.org
-[benchmark]: //github.com/VeraLiconaResearchGroup/MHSGenerationAlgorithms
-[boost]: //www.boost.org
-[concurrentqueue]: github.com/cameron314/concurrentqueue
-[paper]: TODO
-[shd]: //research.nii.ac.jp/~uno/code/shd.html
+[agdmhs-algorun]: http://agdmhs.algorun.org
+[algorun]: http://algorun.org
+[benchmark]: http://github.com/VeraLiconaResearchGroup/MHSGenerationAlgorithms
+[boost]: http://www.boost.org
+[concurrentqueue]: http://github.com/cameron314/concurrentqueue
+[paper]: http://arxiv.org/abs/1601.02939
+[shd]: http://research.nii.ac.jp/~uno/code/shd.html
