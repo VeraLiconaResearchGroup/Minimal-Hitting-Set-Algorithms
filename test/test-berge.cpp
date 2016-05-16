@@ -1,5 +1,6 @@
 /**
-   Abstract base class for MHS algorithms
+   Test cases for Berge's algorithm
+
    Copyright Vera-Licona Research Group (C) 2016
    Author: Andrew Gainer-Dewar, Ph.D. <andrew.gainer.dewar@gmail.com>
 
@@ -16,16 +17,25 @@
    General Public License for more details.
 **/
 
-#ifndef __MHS_ALGORITHM_H
-#define __MHS_ALGORITHM_H
+#include "berge.hpp"
+#include "catch.hpp"
 
-#include "hypergraph.hpp"
+TEST_CASE ("Berge: Simple hypergraph, full enumeration") {
+    agdmhs::BergeAlgorithm alg;
 
-namespace agdmhs {
-    class MHSAlgorithm {
-    public:
-        virtual Hypergraph transversal (const Hypergraph& H) const = 0;
-    };
+    agdmhs::Hypergraph H ("example-input.dat");
+    agdmhs::Hypergraph T = alg.transversal(H);
+
+    REQUIRE(T.num_verts() == 6);
+    REQUIRE(T.num_edges() == 5);
 }
 
-#endif
+TEST_CASE ("Berge: Simple hypergraph, cutoff enumeration") {
+    agdmhs::BergeAlgorithm alg (1);
+
+    agdmhs::Hypergraph H ("example-input.dat");
+    agdmhs::Hypergraph T = alg.transversal(H);
+
+    REQUIRE(T.num_verts() == 6);
+    REQUIRE(T.num_edges() == 0);
+}

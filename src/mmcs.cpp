@@ -29,14 +29,9 @@
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
-#include <boost/dynamic_bitset.hpp>
 
 // TODO: Input specifications with <cassert>
 namespace agdmhs {
-    MMCSAlgorithm::MMCSAlgorithm (size_t cutoff_size):
-        num_threads(0), cutoff_size(cutoff_size)
-    {};
-
     MMCSAlgorithm::MMCSAlgorithm (size_t num_threads,
                                   size_t cutoff_size):
         num_threads(num_threads), cutoff_size(cutoff_size)

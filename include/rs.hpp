@@ -38,8 +38,7 @@ namespace agdmhs {
         size_t cutoff_size;
 
     public:
-        RSAlgorithm (size_t cutoff_size = 0);
-        RSAlgorithm (size_t num_threads, size_t cutoff_size = 0);
+        RSAlgorithm (size_t num_threads, size_t cutoff_size);
         Hypergraph transversal (const Hypergraph& H) const override;
 
     private:

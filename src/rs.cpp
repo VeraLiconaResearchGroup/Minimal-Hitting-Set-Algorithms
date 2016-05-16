@@ -33,10 +33,6 @@
 
 // TODO: Input specifications with <cassert>
 namespace agdmhs {
-    RSAlgorithm::RSAlgorithm (size_t cutoff_size):
-        num_threads(0), cutoff_size(cutoff_size)
-    {};
-
     RSAlgorithm::RSAlgorithm (size_t num_threads,
                               size_t cutoff_size):
         num_threads(num_threads), cutoff_size(cutoff_size)

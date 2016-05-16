@@ -1,5 +1,6 @@
 /**
-   Abstract base class for MHS algorithms
+   Test cases for Hypergraph
+
    Copyright Vera-Licona Research Group (C) 2016
    Author: Andrew Gainer-Dewar, Ph.D. <andrew.gainer.dewar@gmail.com>
 
@@ -16,16 +17,11 @@
    General Public License for more details.
 **/
 
-#ifndef __MHS_ALGORITHM_H
-#define __MHS_ALGORITHM_H
-
+#include "catch.hpp"
 #include "hypergraph.hpp"
 
-namespace agdmhs {
-    class MHSAlgorithm {
-    public:
-        virtual Hypergraph transversal (const Hypergraph& H) const = 0;
-    };
+TEST_CASE ("Small hypergraph tests") {
+    agdmhs::Hypergraph H ("example-input.dat");
+    REQUIRE(H.num_verts() == 6);
+    REQUIRE(H.num_edges() == 3);
 }
-
-#endif

@@ -215,20 +215,17 @@ namespace agdmhs {
         assert(num_verts() == G.num_verts());
 
         // Container to store all the new edges
-        bsvector newedges;
+        Hypergraph result (G.num_verts());
 
         // For every pair of edges in this and G, add their union
         for (auto& edge1: _edges) {
             for (auto& edge2: G._edges) {
                 bitset newedge = edge1 | edge2;
                 if (newedge.count() <= cutoff_size) {
-                    newedges.push_back(newedge);
+                    result.add_edge(newedge);
                 }
             }
         }
-
-        // Build the result hypergraph with these edges
-        Hypergraph result(newedges);
 
         // Minimize if requested
         // TODO: Can this be rolled into the union operation to save time?

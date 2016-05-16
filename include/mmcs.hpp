@@ -37,8 +37,7 @@ namespace agdmhs {
         size_t cutoff_size;
 
     public:
-        MMCSAlgorithm (size_t cutoff_size = 0);
-        MMCSAlgorithm (size_t num_threads, size_t cutoff_size = 0);
+        MMCSAlgorithm (size_t num_threads, size_t cutoff_size);
         Hypergraph transversal (const Hypergraph& H) const override;
 
     private:
