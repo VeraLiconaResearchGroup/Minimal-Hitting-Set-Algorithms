@@ -4,7 +4,7 @@ DEP := $(SRC:.cpp=.P)
 BIN = agdmhs
 
 # C++ compiler flags
-CXXFLAGS += --std=c++11
+CXXFLAGS += --std=c++14
 CXXFLAGS += -fPIC
 CXXFLAGS += -fopenmp
 CXXFLAGS += -Wall

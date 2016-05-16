@@ -21,6 +21,7 @@
 #include "fka.hpp"
 #include "hypergraph.hpp"
 #include "mmcs.hpp"
+#include "mhs-algorithm.hpp"
 #include "rs.hpp"
 
 #include <iostream>
@@ -36,19 +37,7 @@
 
 namespace po = boost::program_options;
 
-void check_threads(int num_threads) {
-    if (num_threads > 1) {
-        std::cout << "Notice: this algorithm does not support multithreading." << std::endl;
-    }
-}
-
-void check_cutoff(int cutoff_size) {
-    if (cutoff_size > 0) {
-        std::cout << "Notice: this algorithm does not support cutoff." << std::endl;
-    }
-}
-
-int main(int argc, char * argv[]) {
+int main (int argc, char * argv[]) {
     // SET UP ARGUMENTS
     po::options_description desc("Options");
     desc.add_options()
@@ -104,33 +93,28 @@ int main(int argc, char * argv[]) {
     std::cout << "Input has " << H.num_verts() << " vertices and " << H.num_edges() << " edges." << std::endl;
 
     // Run chosen algorithm
-    agdmhs::Hypergraph Htrans;
     std::string algname = vm["algorithm"].as<std::string>();
 
-    BOOST_LOG_TRIVIAL(debug) << "Running algorithm.";
-
-    if (algname == "pmmcs") {
-        Htrans = agdmhs::mmcs_transversal(H, num_threads, cutoff_size);
-    } else if (algname == "prs") {
-        Htrans = agdmhs::rs_transversal(H, num_threads, cutoff_size);
-    } else if (algname == "fka") {
-        check_threads(num_threads);
-        check_cutoff(cutoff_size);
-
-        Htrans = agdmhs::fka_transversal(H);
-    } else if (algname == "berge") {
-        check_threads(num_threads);
-
-        Htrans = agdmhs::berge_transversal(H, cutoff_size);
+    agdmhs::MHSAlgorithm* mhs_algorithm;
+    if (algname == "berge") {
+        mhs_algorithm = new agdmhs::BergeAlgorithm(cutoff_size);
     } else if (algname == "bm") {
-        check_cutoff(cutoff_size);
-
-        Htrans = agdmhs::bm_transversal(H, num_threads);
+        mhs_algorithm = new agdmhs::ParBMAlgorithm (num_threads);
+    } else if (algname == "fka") {
+        mhs_algorithm = new agdmhs::FKAlgorithmA();
+    } else if (algname == "mmcs" or algname == "pmmcs") {
+        mhs_algorithm = new agdmhs::MMCSAlgorithm(num_threads, cutoff_size);
+    } else if (algname == "rs" or algname == "prs") {
+        mhs_algorithm = new agdmhs::RSAlgorithm(num_threads, cutoff_size);
     } else {
         std::stringstream error_message;
         error_message << "Did not recognize requested algorithm " << algname << ".";
         throw po::invalid_option_value(error_message.str());
     }
+
+    BOOST_LOG_TRIVIAL(debug) << "Running algorithm " << algname;
+    agdmhs::Hypergraph Htrans = mhs_algorithm->transversal(H);
+
     std::cout << "Found " << Htrans.num_edges() << " hitting sets." << std::endl;
     BOOST_LOG_TRIVIAL(debug) << "Algorithm complete.";
 

@@ -1,5 +1,5 @@
 /**
-   C++ implementation of the FK-A algorithm
+   Abstract base class for MHS algorithms
    Copyright Vera-Licona Research Group (C) 2015
    Author: Andrew Gainer-Dewar, Ph.D. <andrew.gainer.dewar@gmail.com>
 
@@ -16,20 +16,15 @@
    General Public License for more details.
 **/
 
-#ifndef _FKA__H
-#define _FKA__H
+#ifndef __MHS_ALGORITHM_H
+#define __MHS_ALGORITHM_H
 
-#include "fk-algorithm.hpp"
 #include "hypergraph.hpp"
 
 namespace agdmhs {
-    class FKAlgorithmA: public FKAlgorithm {
+    class MHSAlgorithm {
     public:
-        FKAlgorithmA ();
-        Hypergraph transversal (const Hypergraph& H) const override;
-
-    private:
-        static bitset find_omit_set (const Hypergraph& F, const Hypergraph& G);
+        virtual Hypergraph transversal (const Hypergraph& H) const = 0;
     };
 }
 

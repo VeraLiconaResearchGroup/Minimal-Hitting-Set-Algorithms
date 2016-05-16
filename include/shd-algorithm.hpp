@@ -19,18 +19,12 @@
 #ifndef _SHD__H
 #define _SHD__H
 
-#include "concurrentqueue.h"
 #include "hypergraph.hpp"
+#include "mhs-algorithm.hpp"
 
-#include <boost/dynamic_bitset.hpp>
-
-#include <exception>
 #include <map>
-#include <utility>
 
 namespace agdmhs {
-    // Types to record mappings of indices to bitsets
-    // For example, each element of crit[] is a bitset
     typedef std::map<hindex, bitset> hsetmap;
 
     class vertex_violating_exception: public std::exception {
@@ -39,25 +33,12 @@ namespace agdmhs {
         }
     };
 
-    bool vertex_would_violate(const Hypergraph& crit,
-                              const bitset& uncov,
-                              const Hypergraph& H,
-                              const Hypergraph& T,
-                              const bitset& S,
-                              const hindex v);
-
-    hsetmap update_crit_and_uncov(Hypergraph& crit,
-                                  bitset& uncov,
-                                  const Hypergraph& H,
-                                  const Hypergraph& T,
-                                  const bitset& S,
-                                  const hindex v);
-
-    void restore_crit_and_uncov(Hypergraph& crit,
-                                bitset& uncov,
-                                const bitset& S,
-                                const hsetmap& critmark,
-                                const hindex v);
+    class SHDAlgorithm: public MHSAlgorithm {
+    protected:
+        bool vertex_would_violate (const Hypergraph& crit, const bitset& uncov, const Hypergraph& H, const Hypergraph& T, const bitset& S, const hindex v) const;
+        hsetmap update_crit_and_uncov(Hypergraph& crit, bitset& uncov, const Hypergraph& H, const Hypergraph& T, const bitset& S, const hindex v) const ;
+        void restore_crit_and_uncov(Hypergraph& crit, bitset& uncov, const bitset& S, const hsetmap& critmark, const hindex v) const;
+    };
 }
 
 #endif

@@ -16,15 +16,14 @@
    General Public License for more details.
 **/
 
-#include "fk-base.hpp"
-
+#include "fk-algorithm.hpp"
 #include "hypergraph.hpp"
+#include "mhs-algorithm.hpp"
 
 #include <cassert>
+#include <cmath>
 #include <vector>
 #include <utility>
-
-#include <boost/dynamic_bitset.hpp>
 
 #define BOOST_LOG_DYN_LINK 1 // Fix an issue with dynamic library loading
 #include <boost/log/core.hpp>
@@ -32,7 +31,8 @@
 #include <boost/log/expressions.hpp>
 
 namespace agdmhs {
-    bitset fk_hitting_condition_check(const Hypergraph& F, const Hypergraph& G) {
+    bitset FKAlgorithm::hitting_condition_check (const Hypergraph& F,
+                                                 const Hypergraph& G) {
         // Check whether all edges in F and G intersect
         // per FK (eq. 1.1)
         for (auto const& Fedge: F) {
@@ -53,7 +53,8 @@ namespace agdmhs {
         return omit_set;
     }
 
-    bitset fk_coverage_condition_check(const Hypergraph& F, const Hypergraph& G) {
+    bitset FKAlgorithm::coverage_condition_check (const Hypergraph& F,
+                                                  const Hypergraph& G) {
         // Check whether F and G cover the same vertices
         // per FK (eq. 1.2)
         bitset Fcovered = F.verts_covered();
@@ -94,7 +95,8 @@ namespace agdmhs {
         return omit_set;
     }
 
-    bitset fk_edge_size_check(const Hypergraph& F, const Hypergraph& G) {
+    bitset FKAlgorithm::edge_size_check (const Hypergraph& F,
+                                         const Hypergraph& G) {
         // Check whether F and G satisfy the edge size condition
         // per FK (eq. 1.3)
         for (auto const& Fedge: F) {
@@ -155,7 +157,8 @@ namespace agdmhs {
         return omit_set;
     }
 
-    bitset fk_satisfiability_count_check(const Hypergraph& F, const Hypergraph& G) {
+    bitset FKAlgorithm::satisfiability_count_check (const Hypergraph& F,
+                                                    const Hypergraph& G) {
         // Check whether the satisfiability count condition is met
         // per FK (eq. 2.1)
         // This is a subtle algebraic condition, but it is the heart of the FK
@@ -214,7 +217,8 @@ namespace agdmhs {
         return omit_set;
     }
 
-    bitset fk_small_hypergraphs_check(const Hypergraph& F, const Hypergraph& G) {
+    bitset FKAlgorithm::small_hypergraphs_check (const Hypergraph& F,
+                                                 const Hypergraph& G) {
         // Check whether F or G is small enough to handle manually.
         if (F.num_edges() == 0 or G.num_edges() == 0) {
             BOOST_LOG_TRIVIAL(trace) << "Either F or G is null.";
@@ -238,7 +242,8 @@ namespace agdmhs {
         return omit_set;
     }
 
-    hindex fk_most_frequent_vertex(const Hypergraph& F, const Hypergraph& G) {
+    hindex FKAlgorithm::most_frequent_vertex (const Hypergraph& F,
+                                              const Hypergraph& G) {
         size_t n = F.num_verts();
         std::vector<int> freqs(n);
 
@@ -267,7 +272,8 @@ namespace agdmhs {
         return max_freq_vert;
     }
 
-    Hypergraph fk_minimized_union(const Hypergraph& F, const Hypergraph& G) {
+    Hypergraph FKAlgorithm::minimized_union (const Hypergraph& F,
+                                             const Hypergraph& G) {
         // Construct the edge union of F and G, under the assumption that no edge
         // in G is a subset of any edge in F (valid for split-join operation)
         // TODO: extend this to work in generality using erase-remove
@@ -292,7 +298,8 @@ namespace agdmhs {
         return result;
     }
 
-    std::pair<Hypergraph, Hypergraph> fk_split_hypergraph_over_vertex(const Hypergraph& H, const hindex& v) {
+    std::pair<Hypergraph, Hypergraph> FKAlgorithm::split_hypergraph_over_vertex (const Hypergraph& H,
+                                                                                 const hindex& v) {
         // Split H into two hypergraphs based on the vertex v:
         // H0 gets the edges which contained v, but with v removed from each
         // H1 gets the edges which did not contain v
@@ -314,7 +321,9 @@ namespace agdmhs {
         return result;
     }
 
-        bitset fk_minimize_new_hs(const Hypergraph& F, const Hypergraph& G, bitset S) {
+    bitset FKAlgorithm::minimize_new_hs (const Hypergraph& F,
+                                         const Hypergraph& G,
+                                         bitset S) {
         /**
            Given a hypergraph F, a collection of MHSs G, and new hitting set S,
            find a new MHS which is a subset of S.
@@ -389,5 +398,5 @@ namespace agdmhs {
         // What's left in S is an inclusion-minimal hitting set
         assert(F.is_transversed_by(S));
         return S;
-   }
+    }
 }

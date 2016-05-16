@@ -19,23 +19,29 @@
 #ifndef _PARBM__H
 #define _PARBM__H
 
-#include <vector>
-
 #include "hypergraph.hpp"
+#include "fk-algorithm.hpp"
 
 namespace agdmhs {
-    Hypergraph bm_transversal(const Hypergraph& H,
-                              const size_t num_threads);
+    class ParBMAlgorithm: public FKAlgorithm {
+        size_t num_threads;
 
-    void bm_find_new_hses(const Hypergraph& H,
-                          const Hypergraph& G,
-                          const bitset& c,
-                          bsqueue& results);
+    public:
+        ParBMAlgorithm ();
+        ParBMAlgorithm (size_t num_threads);
+        Hypergraph transversal (const Hypergraph& H) const override;
 
-    void bm_find_new_hses_fork(const Hypergraph& H,
-                               const Hypergraph& G,
-                               const Hypergraph& C,
-                               bsqueue& results);
+    private:
+        void find_new_hses(const Hypergraph& H, const Hypergraph& G, const bitset& c, bsqueue& results) const;
+        void find_new_hses_fork(const Hypergraph& H, const Hypergraph& G, const Hypergraph& C, bsqueue& results) const;
+        void minimize_new_hses (const Hypergraph& H, const Hypergraph& G, bsqueue& new_hses, bsqueue& new_mhses) const;
+
+        static Hypergraph l4_full_cover (const Hypergraph& H, const bitset& edge);
+        static Hypergraph l5_full_cover (const Hypergraph& H, const bitset& base_transversal);
+        static bitset find_missed_edge (const Hypergraph& H, const bitset& I);
+        static bitset find_subset_edge (const Hypergraph& H, const bitset& I);
+        static bitset minimize_new_hs (const Hypergraph& H, bitset new_hs);
+    };
 }
 
 #endif

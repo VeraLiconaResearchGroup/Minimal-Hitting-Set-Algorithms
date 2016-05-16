@@ -22,15 +22,12 @@
 **/
 
 #include "bm.hpp"
-
 #include "concurrentqueue.h"
-#include "fk-base.hpp"
+#include "fk-algorithm.hpp"
 #include "hypergraph.hpp"
+#include "mhs-algorithm.hpp"
 
-#include <atomic>
 #include <cassert>
-
-#include <boost/dynamic_bitset.hpp>
 
 #define BOOST_LOG_DYN_LINK 1 // Fix an issue with dynamic library loading
 #include <boost/log/core.hpp>
@@ -38,12 +35,80 @@
 #include <boost/log/expressions.hpp>
 
 namespace agdmhs {
-    Hypergraph l4_full_cover(const Hypergraph& H,
-                             const bitset& base_edge) {
+    ParBMAlgorithm::ParBMAlgorithm ():
+        num_threads(0)
+    {};
+
+    ParBMAlgorithm::ParBMAlgorithm (size_t num_threads):
+        num_threads(num_threads)
+    {};
+
+    Hypergraph ParBMAlgorithm::transversal (const Hypergraph& H) const {
+        BOOST_LOG_TRIVIAL(debug) << "Starting BM with " << num_threads
+                                 << " threads. Hypergraph has "
+                                 << H.num_verts() << " vertices and "
+                                 << H.num_edges() << " edges.";
+
+        // Set up inputs
+        Hypergraph Hmin = H.minimization();
+        Hypergraph G (H.num_verts());
+        bitset V = Hmin.verts_covered();
+
+        // Initialize using any HS we can find
+        bitset first_hs = FKAlgorithm::minimize_new_hs(Hmin, G, V);
+        G.add_edge(first_hs);
+
+        // Grow G until it covers all vertices
+        bool G_has_full_coverage = false;
+        while (not G_has_full_coverage) {
+            bitset new_hs = V - coverage_condition_check(H, G);
+            if (new_hs.is_proper_subset_of(V)) {
+                bitset new_mhs = FKAlgorithm::minimize_new_hs(Hmin, G, new_hs);
+                G.add_edge(new_mhs);
+            } else {
+                G_has_full_coverage = true;
+            }
+        }
+
+        // Apply the BM algorithm repeatedly, generating new transversals
+        // until duality is confirmed
+        bool still_searching_for_transversals = true;
+        bsqueue new_hses, new_mhses;
+#pragma omp parallel shared(Hmin, G, new_hses, new_mhses) num_threads(num_threads)
+#pragma omp master
+        while (still_searching_for_transversals) {
+            find_new_hses(Hmin, G, Hmin.verts_covered(), new_hses);
+
+            if (new_hses.size_approx() == 0) {
+                still_searching_for_transversals = false;
+            } else {
+                minimize_new_hses(Hmin, G, new_hses, new_mhses);
+
+                bitset new_mhs;
+                while (new_mhses.try_dequeue(new_mhs)) {
+                    // The results will all be inclusion-minimal, but
+                    // there may be some overlap. Thus, we try to add
+                    // them...
+                    try {
+                        G.add_edge(new_mhs, true);
+                    }
+                    // But ignore any minimality_violated_exception
+                    // that is thrown.
+                    catch (minimality_violated_exception& e) {}
+                }
+                BOOST_LOG_TRIVIAL(debug) << "New |G|: " << G.num_edges();
+            }
+        }
+
+        return G;
+    }
+
+    Hypergraph ParBMAlgorithm::l4_full_cover (const Hypergraph& H,
+                                              const bitset& base_edge) {
         /**
            Find a full cover of the dual of H from the given base_edge
            in accordance with lemma 4 of BM.
-         **/
+        **/
         Hypergraph C (H.num_verts());
         bitset V = H.verts_covered();
 
@@ -61,12 +126,12 @@ namespace agdmhs {
         return C;
     }
 
-    Hypergraph l5_full_cover(const Hypergraph& H,
-                             const bitset& base_transversal) {
+    Hypergraph ParBMAlgorithm::l5_full_cover (const Hypergraph& H,
+                                              const bitset& base_transversal) {
         /**
            Find a full cover of the dual of H from the given base_transversal
            in accordance with lemma 5 of BM.
-         **/
+        **/
         Hypergraph C (H.num_verts());
         bitset V = H.verts_covered();
 
@@ -83,12 +148,12 @@ namespace agdmhs {
         return C;
     }
 
-    bitset find_missed_edge(const Hypergraph& H,
-                            const bitset& I) {
+    bitset ParBMAlgorithm::find_missed_edge (const Hypergraph& H,
+                                             const bitset& I) {
         /**
            Search for an edge of H which does not intersect I.
            If found, return it; if not, return an empty edge as a signal.
-         **/
+        **/
 
         for (auto& edge: H) {
             if (not edge.intersects(I)) {
@@ -101,12 +166,12 @@ namespace agdmhs {
         return empty_edge;
     }
 
-    bitset find_subset_edge(const Hypergraph& H,
-                            const bitset& I) {
+    bitset ParBMAlgorithm::find_subset_edge (const Hypergraph& H,
+                                             const bitset& I) {
         /**
            Search for an edge of H which is a subset of I.
            If found, return it; if not, return an empty edge as a signal.
-         **/
+        **/
 
         for (auto& edge: H) {
             if (edge.is_subset_of(I)) {
@@ -119,15 +184,15 @@ namespace agdmhs {
         return empty_edge;
     }
 
-    void bm_find_new_hses_fork(const Hypergraph& H,
-                               const Hypergraph& G,
-                               const Hypergraph& C,
-                               bsqueue& results) {
+    void ParBMAlgorithm::find_new_hses_fork (const Hypergraph& H,
+                                             const Hypergraph& G,
+                                             const Hypergraph& C,
+                                             bsqueue& results) const {
         /**
            Find any new hitting sets of H with respect to G,
            splitting the work over the full cover C of Tr(H) and queueing
            the results.
-         **/
+        **/
 
         bitset V = C.verts_covered();
 
@@ -135,20 +200,20 @@ namespace agdmhs {
 #pragma omp task shared(H, G, results)
             {
                 assert(c.is_subset_of(V));
-                bm_find_new_hses(H, G, c, results);
+                find_new_hses(H, G, c, results);
             }
         }
 #pragma omp taskwait
     }
 
-    void bm_find_new_hses(const Hypergraph& H,
-                          const Hypergraph& G,
-                          const bitset& c,
-                          bsqueue& results) {
+    void ParBMAlgorithm::find_new_hses (const Hypergraph& H,
+                                        const Hypergraph& G,
+                                        const bitset& c,
+                                        bsqueue& results) const {
         /**
            Find any new hitting sets of H^c with respect to G_c, queueing the
            results.
-         **/
+        **/
 
         // Construct the reduced hypergraphs
         Hypergraph Hc = H.contraction(c, false);
@@ -210,7 +275,7 @@ namespace agdmhs {
         // If found, form a full cover
         if (missed_edge.any()) {
             Hypergraph C = l4_full_cover(Hc, missed_edge);
-            bm_find_new_hses_fork(H, G, C, results);
+            find_new_hses_fork(H, G, C, results);
             return;
         }
 
@@ -219,7 +284,7 @@ namespace agdmhs {
         // If found, form a full cover
         if (subtrans_edge.any()) {
             Hypergraph C = l5_full_cover(Hc, subtrans_edge);
-            bm_find_new_hses_fork(H, G, C, results);
+            find_new_hses_fork(H, G, C, results);
             return;
         }
 
@@ -228,13 +293,13 @@ namespace agdmhs {
         return;
     }
 
-    bitset bm_minimize_new_hs(const Hypergraph& H,
-                              bitset new_hs) {
+    bitset ParBMAlgorithm::minimize_new_hs (const Hypergraph& H,
+                                            bitset new_hs) {
         /**
            Given a hypergraph H and a new hitting set new_hs, find an
            inclusion-minimal subset of new_hs which is still a hitting
            set of H.
-         **/
+        **/
 
         BOOST_LOG_TRIVIAL(trace) << "Attempting minimization of"
                                  << "\nS:\t" << new_hs;
@@ -260,79 +325,18 @@ namespace agdmhs {
         return new_hs;
     }
 
-    void bm_minimize_new_hses(const Hypergraph& H,
-                              const Hypergraph& G,
-                              bsqueue& new_hses,
-                              bsqueue& new_mhses) {
+    void ParBMAlgorithm::minimize_new_hses (const Hypergraph& H,
+                                            const Hypergraph& G,
+                                            bsqueue& new_hses,
+                                            bsqueue& new_mhses) const {
         bitset new_hs;
         while (new_hses.try_dequeue(new_hs)) {
 #pragma omp task shared(H, G, new_hses, new_mhses)
             {
-                bitset new_mhs = bm_minimize_new_hs(H, new_hs);
+                bitset new_mhs = minimize_new_hs(H, new_hs);
                 new_mhses.enqueue(new_mhs);
             }
 #pragma omp taskwait
         }
-    }
-
-    Hypergraph bm_transversal(const Hypergraph& H,
-                              const size_t num_threads) {
-        BOOST_LOG_TRIVIAL(debug) << "Starting BM with " << num_threads
-                                 << " threads. Hypergraph has "
-                                 << H.num_verts() << " vertices and "
-                                 << H.num_edges() << " edges.";
-
-        // Set up inputs
-        Hypergraph Hmin = H.minimization();
-        Hypergraph G (H.num_verts());
-        bitset V = Hmin.verts_covered();
-
-        // Initialize using any HS we can find
-        bitset first_hs = fk_minimize_new_hs(Hmin, G, V);
-        G.add_edge(first_hs);
-
-        // Grow G until it covers all vertices
-        bool G_has_full_coverage = false;
-        while (not G_has_full_coverage) {
-            bitset new_hs = V - fk_coverage_condition_check(H, G);
-            if (new_hs.is_proper_subset_of(V)) {
-                bitset new_mhs = fk_minimize_new_hs(Hmin, G, new_hs);
-                G.add_edge(new_mhs);
-            } else {
-                G_has_full_coverage = true;
-            }
-        }
-
-        // Apply the BM algorithm repeatedly, generating new transversals
-        // until duality is confirmed
-        bool still_searching_for_transversals = true;
-        bsqueue new_hses, new_mhses;
-#pragma omp parallel shared(Hmin, G, new_hses, new_mhses) num_threads(num_threads)
-#pragma omp master
-        while (still_searching_for_transversals) {
-            bm_find_new_hses(Hmin, G, Hmin.verts_covered(), new_hses);
-
-            if (new_hses.size_approx() == 0) {
-                still_searching_for_transversals = false;
-            } else {
-                bm_minimize_new_hses(Hmin, G, new_hses, new_mhses);
-
-                bitset new_mhs;
-                while (new_mhses.try_dequeue(new_mhs)) {
-                    // The results will all be inclusion-minimal, but
-                    // there may be some overlap. Thus, we try to add
-                    // them...
-                    try {
-                        G.add_edge(new_mhs, true);
-                    }
-                    // But ignore any minimality_violated_exception
-                    // that is thrown.
-                    catch (minimality_violated_exception& e) {}
-                }
-                BOOST_LOG_TRIVIAL(debug) << "New |G|: " << G.num_edges();
-            }
-        }
-
-        return G;
     }
 }

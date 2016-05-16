@@ -16,31 +16,28 @@
    General Public License for more details.
 **/
 
-#include "shd-base.hpp"
-
 #include "hypergraph.hpp"
-
-#include <boost/dynamic_bitset.hpp>
+#include "mhs-algorithm.hpp"
+#include "shd-algorithm.hpp"
 
 #define BOOST_LOG_DYN_LINK 1 // Fix an issue with dynamic library loading
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
-#include <boost/dynamic_bitset.hpp>
 
 #include <cassert>
 
 namespace agdmhs {
-    bool vertex_would_violate(const Hypergraph& crit,
-                              const bitset& uncov,
-                              const Hypergraph& H,
-                              const Hypergraph& T,
-                              const bitset& S,
-                              const hindex v) {
+    bool SHDAlgorithm::vertex_would_violate (const Hypergraph& crit,
+                                             const bitset& uncov,
+                                             const Hypergraph& H,
+                                             const Hypergraph& T,
+                                             const bitset& S,
+                                             const hindex v) const {
         /*
           Determine whether addition of v to S would violate any vertices.
           (That is, whether any vertex in S would be redundant in S+v.)
-         */
+        */
 
         // Input specification
         assert(not S.test(v));
@@ -62,17 +59,17 @@ namespace agdmhs {
         return false;
     }
 
-    hsetmap update_crit_and_uncov(Hypergraph& crit,
-                                  bitset& uncov,
-                                  const Hypergraph& H,
-                                  const Hypergraph& T,
-                                  const bitset& S,
-                                  const hindex v) {
+    hsetmap SHDAlgorithm::update_crit_and_uncov (Hypergraph& crit,
+                                                 bitset& uncov,
+                                                 const Hypergraph& H,
+                                                 const Hypergraph& T,
+                                                 const bitset& S,
+                                                 const hindex v) const {
         /*
           Update crit[] and uncov to reflect S+v.
           (Assumes crit[] and uncov were correct for S.)
           Returns overlay with edges removed from crit.
-         */
+        */
         // Input specification
         assert(not S.test(v));
         assert(crit[v].none());
@@ -100,11 +97,11 @@ namespace agdmhs {
         return critmark;
     }
 
-    void restore_crit_and_uncov(Hypergraph& crit,
-                                bitset& uncov,
-                                const bitset& S,
-                                const hsetmap& critmark,
-                                const hindex v) {
+    void SHDAlgorithm::restore_crit_and_uncov (Hypergraph& crit,
+                                               bitset& uncov,
+                                               const bitset& S,
+                                               const hsetmap& critmark,
+                                               const hindex v) const {
         /*
           Update crit[] and uncov to reflect S no longer containing v.
           (Assumes crit[] and uncov were correct for S with v included.)
