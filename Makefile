@@ -58,4 +58,5 @@ agdmhs-test: $(LIBOBJ) $(TESTOBJ)
 	rm -f $*.d
 
 clean:
-	-rm -vf $(EXEC) $(OBJ) $(TESTOBJ) $(DEP) $(BIN)
+	-rm -vf $(EXEC) $(OBJ) $(TESTOBJ) $(DEP) $(BIN) $(TEST)
+
