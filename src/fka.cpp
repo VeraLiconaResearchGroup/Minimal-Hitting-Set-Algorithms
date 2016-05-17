@@ -39,18 +39,18 @@ namespace agdmhs {
         Hypergraph G (H.num_verts());
 
         Hypergraph Hmin = H.minimization();
-        bitset V = Hmin.verts_covered();
+        Hypergraph::Edge V = Hmin.verts_covered();
 
         bool still_searching_for_transversals = true;
         while (still_searching_for_transversals) {
-            bitset omit_set = find_omit_set(Hmin, G);
+            Hypergraph::Edge omit_set = find_omit_set(Hmin, G);
 
             if (omit_set.none() and G.num_edges() > 0) {
                 BOOST_LOG_TRIVIAL(debug) << "Received empty omit_set, so we're done.";
                 still_searching_for_transversals = false;
             } else {
-                bitset new_hs = V - omit_set;
-                bitset new_mhs = minimize_new_hs(H, G, new_hs);
+                Hypergraph::Edge new_hs = V - omit_set;
+                Hypergraph::Edge new_mhs = minimize_new_hs(H, G, new_hs);
                 BOOST_LOG_TRIVIAL(trace) << "Received witness."
                                          << "\nomit_set:\t" << omit_set
                                          << "\nMHS:\t\t" << new_mhs;
@@ -62,8 +62,8 @@ namespace agdmhs {
         return G;
     }
 
-    bitset FKAlgorithmA::find_omit_set (const Hypergraph& F,
-                                        const Hypergraph& G) {
+    Hypergraph::Edge FKAlgorithmA::find_omit_set (const Hypergraph& F,
+                                                  const Hypergraph& G) {
         /**
            Test whether F and G are dual.
 
@@ -79,7 +79,7 @@ namespace agdmhs {
         assert(F.num_verts() == G.num_verts());
 
         // Create an empty omit_set to use as temporary storage
-        bitset omit_set (F.num_verts());
+        Hypergraph::Edge omit_set (F.num_verts());
 
         // FK step 1: initialize if G is empty
         if (G.num_edges() == 0) {
@@ -122,7 +122,7 @@ namespace agdmhs {
         // FK step 4: Recurse
 
         // Find the most frequently occurring vertex
-        hindex max_freq_vert = most_frequent_vertex(F, G);
+        Hypergraph::EdgeIndex max_freq_vert = most_frequent_vertex(F, G);
 
         // Then we compute the split hypergraphs F0, F1, G0, and G1
         std::pair<Hypergraph, Hypergraph> Fsplit, Gsplit;
@@ -144,7 +144,7 @@ namespace agdmhs {
         if (F1.num_edges() > 0 and Gnew.num_edges() > 0) {
             BOOST_LOG_TRIVIAL(trace) << "Side 1 recursion.";
 
-            bitset omit_set = find_omit_set(F1, Gnew);
+            Hypergraph::Edge omit_set = find_omit_set(F1, Gnew);
             if (omit_set.any()) {
                 return omit_set;
             }
@@ -153,7 +153,7 @@ namespace agdmhs {
         if (Fnew.num_edges() > 0 and G1.num_edges() > 0) {
             BOOST_LOG_TRIVIAL(trace) << "Side 2 recursion.";
 
-            bitset omit_set = find_omit_set(Fnew, G1);
+            Hypergraph::Edge omit_set = find_omit_set(Fnew, G1);
             if (omit_set.any()) {
                 omit_set.set(max_freq_vert);
                 return omit_set;

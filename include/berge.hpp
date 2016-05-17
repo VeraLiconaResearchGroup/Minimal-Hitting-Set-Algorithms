@@ -24,14 +24,14 @@
 
 namespace agdmhs {
     class BergeAlgorithm: public MHSAlgorithm {
-        size_t cutoff_size;
+        unsigned cutoff_size;
 
     public:
-        BergeAlgorithm (size_t cutoff_size = 0);
+        BergeAlgorithm (unsigned cutoff_size = 0);
         Hypergraph transversal (const Hypergraph& H) const override;
 
     private:
-        Hypergraph update_transversals_with_edge (const Hypergraph& transversals, const bitset& edge) const;
+        Hypergraph update_transversals_with_edge (const Hypergraph& transversals, const Hypergraph::Edge& edge) const;
     };
 }
 

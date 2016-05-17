@@ -29,11 +29,11 @@
 
 namespace agdmhs {
     bool SHDAlgorithm::vertex_would_violate (const Hypergraph& crit,
-                                             const bitset& uncov,
+                                             const Hypergraph::Edge& uncov,
                                              const Hypergraph& H,
                                              const Hypergraph& T,
-                                             const bitset& S,
-                                             const hindex v) const {
+                                             const Hypergraph::Edge& S,
+                                             Hypergraph::EdgeIndex v) const {
         /*
           Determine whether addition of v to S would violate any vertices.
           (That is, whether any vertex in S would be redundant in S+v.)
@@ -44,11 +44,11 @@ namespace agdmhs {
         assert(crit[v].none());
 
         // We only consider edges which are hit by v and are not in uncov
-        bitset test_edges = T[v] - uncov;
+        Hypergraph::Edge test_edges = T[v] - uncov;
 
         // Check whether any w in S would lose all its critical edges
-        hindex w = S.find_first();
-        while (w != bitset::npos) {
+        Hypergraph::EdgeIndex w = S.find_first();
+        while (w != Hypergraph::Edge::npos) {
             if (crit[w].is_subset_of(test_edges)) {
                 return true;
             }
@@ -59,12 +59,12 @@ namespace agdmhs {
         return false;
     }
 
-    hsetmap SHDAlgorithm::update_crit_and_uncov (Hypergraph& crit,
-                                                 bitset& uncov,
+    SHDAlgorithm::hsetmap SHDAlgorithm::update_crit_and_uncov (Hypergraph& crit,
+                                                 Hypergraph::Edge& uncov,
                                                  const Hypergraph& H,
                                                  const Hypergraph& T,
-                                                 const bitset& S,
-                                                 const hindex v) const {
+                                                 const Hypergraph::Edge& S,
+                                                 Hypergraph::EdgeIndex v) const {
         /*
           Update crit[] and uncov to reflect S+v.
           (Assumes crit[] and uncov were correct for S.)
@@ -75,7 +75,7 @@ namespace agdmhs {
         assert(crit[v].none());
 
         // v is critical for edges it hits which were previously uncovered
-        const bitset& v_edges = T[v];
+        const Hypergraph::Edge& v_edges = T[v];
         crit[v] = v_edges;
         crit[v] &= uncov;
 
@@ -85,8 +85,8 @@ namespace agdmhs {
         // Remove anything v hits from the other crit[w]s and record it
         // in critmark[w]s
         hsetmap critmark;
-        hindex w = S.find_first();
-        while (w != bitset::npos) {
+        Hypergraph::EdgeIndex w = S.find_first();
+        while (w != Hypergraph::Edge::npos) {
             critmark[w] = crit[w];
             critmark[w] &= v_edges;
             crit[w] -= v_edges;
@@ -98,10 +98,10 @@ namespace agdmhs {
     }
 
     void SHDAlgorithm::restore_crit_and_uncov (Hypergraph& crit,
-                                               bitset& uncov,
-                                               const bitset& S,
+                                               Hypergraph::Edge& uncov,
+                                               const Hypergraph::Edge& S,
                                                const hsetmap& critmark,
-                                               const hindex v) const {
+                                               Hypergraph::EdgeIndex v) const {
         /*
           Update crit[] and uncov to reflect S no longer containing v.
           (Assumes crit[] and uncov were correct for S with v included.)
@@ -116,8 +116,8 @@ namespace agdmhs {
         crit[v].reset();
 
         // Restore all other crit vertices using critmark
-        hindex w = S.find_first();
-        while (w != bitset::npos) {
+        Hypergraph::EdgeIndex w = S.find_first();
+        while (w != Hypergraph::Edge::npos) {
             try {
                 crit[w] |= critmark.at(w);
             }

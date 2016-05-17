@@ -33,15 +33,15 @@ namespace agdmhs {
     };
 
     class MMCSAlgorithm: public SHDAlgorithm {
-        size_t num_threads;
-        size_t cutoff_size;
+        unsigned num_threads;
+        unsigned cutoff_size;
 
     public:
-        MMCSAlgorithm (size_t num_threads, size_t cutoff_size);
+        MMCSAlgorithm (unsigned num_threads, unsigned cutoff_size);
         Hypergraph transversal (const Hypergraph& H) const override;
 
     private:
-        void extend_or_confirm_set (const Hypergraph& H, const Hypergraph& T, MMCSCounters& counters, bsqueue& hitting_sets, bitset& S, bitset& CAND, Hypergraph& crit, bitset& uncov) const;
+        void extend_or_confirm_set (const Hypergraph& H, const Hypergraph& T, MMCSCounters& counters, Hypergraph::EdgeQueue& hitting_sets, Hypergraph::Edge& S, Hypergraph::Edge& CAND, Hypergraph& crit, Hypergraph::Edge& uncov) const;
     };
 }
 

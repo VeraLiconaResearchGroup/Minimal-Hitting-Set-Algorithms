@@ -26,7 +26,7 @@
 #include <boost/log/expressions.hpp>
 
 namespace agdmhs {
-    BergeAlgorithm::BergeAlgorithm (size_t cutoff_size):
+    BergeAlgorithm::BergeAlgorithm (unsigned cutoff_size):
         cutoff_size(cutoff_size)
     {};
 
@@ -39,16 +39,16 @@ namespace agdmhs {
      * @return the new transversals
      **/
     Hypergraph BergeAlgorithm::update_transversals_with_edge (const Hypergraph& transversals,
-                                                              const bitset& edge) const {
+                                                              const Hypergraph::Edge& edge) const {
         assert(transversals.num_verts() == edge.size());
 
         // Generate a new hypergraph with a singleton edge
         // for each vertex in the given edge
         Hypergraph new_edges (edge.size());
 
-        hindex vertex = edge.find_first();
-        while (vertex != bitset::npos) {
-            bitset newedge (edge.size());
+        Hypergraph::EdgeIndex vertex = edge.find_first();
+        while (vertex != Hypergraph::Edge::npos) {
+            Hypergraph::Edge newedge (edge.size());
             newedge.set(vertex);
             new_edges.add_edge(newedge);
             vertex = edge.find_next(vertex);
@@ -74,9 +74,9 @@ namespace agdmhs {
                                  << H.num_edges() << " edges.";
 
         Hypergraph transversals (H.num_verts());
-        for (hindex i = 0; i < H.num_edges(); ++i) {
+        for (unsigned i = 0; i < H.num_edges(); ++i) {
             BOOST_LOG_TRIVIAL(debug) << "Considering edge " << i;
-            bitset edge = H[i];
+            Hypergraph::Edge edge = H[i];
             transversals = update_transversals_with_edge(transversals, edge);
             BOOST_LOG_TRIVIAL(debug) << "|T| = " << transversals.num_edges();
         }

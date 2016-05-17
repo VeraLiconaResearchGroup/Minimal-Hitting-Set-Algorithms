@@ -31,9 +31,9 @@
 #include <boost/log/expressions.hpp>
 
 // TODO: Input specifications with <cassert>
-namespace agdmhs {
-    MMCSAlgorithm::MMCSAlgorithm (size_t num_threads,
-                                  size_t cutoff_size):
+ namespace agdmhs {
+    MMCSAlgorithm::MMCSAlgorithm (unsigned num_threads,
+                                  unsigned cutoff_size):
         num_threads(num_threads), cutoff_size(cutoff_size)
     {}
 
@@ -43,25 +43,25 @@ namespace agdmhs {
         MMCSCounters counters;
 
         // Candidate hitting set
-        bitset S (H.num_verts());
+        Hypergraph::Edge S (H.num_verts());
         S.reset(); // Initially empty
 
         // Eligible vertices
-        bitset CAND (H.num_verts());
+        Hypergraph::Edge CAND (H.num_verts());
         CAND.set(); // Initially full
 
         // Which edges each vertex is critical for
         Hypergraph crit (H.num_edges(), H.num_verts());
 
         // Which edges are uncovered
-        bitset uncov (H.num_edges());
+        Hypergraph::Edge uncov (H.num_edges());
         uncov.set(); // Initially full
 
         // Tranpose of H
         Hypergraph T = H.transpose();
 
         // Queue to store hitting sets as they are generated
-        bsqueue hitting_sets;
+        Hypergraph::EdgeQueue hitting_sets;
 
         // RUN ALGORITHM
         {
@@ -73,7 +73,7 @@ namespace agdmhs {
 
         // Gather results
         Hypergraph Htrans(H.num_verts());
-        bitset result;
+        Hypergraph::Edge result;
         while (hitting_sets.try_dequeue(result)) {
             Htrans.add_edge(result);
         }
@@ -86,11 +86,11 @@ namespace agdmhs {
     void MMCSAlgorithm::extend_or_confirm_set (const Hypergraph& H,
                                                const Hypergraph& T,
                                                MMCSCounters& counters,
-                                               bsqueue& hitting_sets,
-                                               bitset& S,
-                                               bitset& CAND,
+                                               Hypergraph::EdgeQueue& hitting_sets,
+                                               Hypergraph::Edge& S,
+                                               Hypergraph::Edge& CAND,
                                                Hypergraph& crit,
-                                               bitset& uncov) const {
+                                               Hypergraph::Edge& uncov) const {
         ++counters.iterations;
 
         // Input specification
@@ -100,9 +100,9 @@ namespace agdmhs {
 
         // Otherwise, we prune the vertices to search
         // Per M+U, we find the edge e with smallest intersection with CAND
-        hindex search_edge = uncov.find_first();
-        bitset e = H[search_edge];
-        while (search_edge != bitset::npos) {
+        Hypergraph::EdgeIndex search_edge = uncov.find_first();
+        Hypergraph::Edge e = H[search_edge];
+        while (search_edge != Hypergraph::Edge::npos) {
             if ((H[search_edge] & CAND).count() < (e & CAND).count()) {
                 e = H[search_edge];
             }
@@ -110,19 +110,19 @@ namespace agdmhs {
         }
 
         // Then consider vertices lying in the intersection of e with CAND
-        bitset C = CAND & e; // intersection
+        Hypergraph::Edge C = CAND & e; // intersection
         CAND -= e; // difference
 
         // Store the indices in C in descending order for iteration
-        std::deque<hindex> Cindices;
-        hindex v = C.find_first();
-        while (v != bitset::npos) {
+        std::deque<Hypergraph::EdgeIndex> Cindices;
+        Hypergraph::EdgeIndex v = C.find_first();
+        while (v != Hypergraph::Edge::npos) {
             Cindices.push_front(v);
             v = C.find_next(v);
         }
 
         // Record vertices of C which were violating for S
-        bitset violators (H.num_verts());
+        Hypergraph::Edge violators (H.num_verts());
 
         // Test all the vertices in C (in descending order)
         for (auto& v: Cindices) {
@@ -151,10 +151,10 @@ namespace agdmhs {
                     // don't waste time with small jobs.
                     // Each one gets its own copy of S, CAND, crit, and uncov
                     ++counters.tasks_waiting;
-                    bitset new_S = S;
-                    bitset new_CAND = CAND;
+                    Hypergraph::Edge new_S = S;
+                    Hypergraph::Edge new_CAND = CAND;
                     Hypergraph new_crit = crit;
-                    bitset new_uncov = uncov;
+                    Hypergraph::Edge new_uncov = uncov;
 #pragma omp task shared(H, T, counters, hitting_sets) // Start a new task
                     {
                     --counters.tasks_waiting;

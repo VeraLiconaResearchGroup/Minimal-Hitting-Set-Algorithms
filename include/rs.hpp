@@ -34,16 +34,16 @@ namespace agdmhs {
     };
 
     class RSAlgorithm: public SHDAlgorithm {
-        size_t num_threads;
-        size_t cutoff_size;
+        unsigned num_threads;
+        unsigned cutoff_size;
 
     public:
-        RSAlgorithm (size_t num_threads, size_t cutoff_size);
+        RSAlgorithm (unsigned num_threads, unsigned cutoff_size);
         Hypergraph transversal (const Hypergraph& H) const override;
 
     private:
-        void extend_or_confirm_set (const Hypergraph& H, const Hypergraph& T, RSCounters& counters, bsqueue& hitting_sets, bitset& S, Hypergraph& crit, bitset& uncov, const bitset& violating_vertices) const;
-        static bool any_edge_critical_after_i (const hindex& i, const bitset& S, const Hypergraph& crit);
+        void extend_or_confirm_set (const Hypergraph& H, const Hypergraph& T, RSCounters& counters, Hypergraph::EdgeQueue& hitting_sets, Hypergraph::Edge& S, Hypergraph& crit, Hypergraph::Edge& uncov, const Hypergraph::Edge& violating_vertices) const;
+        static bool any_edge_critical_after_i (Hypergraph::EdgeIndex i, const Hypergraph::Edge& S, const Hypergraph& crit);
     };
 }
 

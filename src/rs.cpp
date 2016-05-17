@@ -33,8 +33,8 @@
 
 // TODO: Input specifications with <cassert>
 namespace agdmhs {
-    RSAlgorithm::RSAlgorithm (size_t num_threads,
-                              size_t cutoff_size):
+    RSAlgorithm::RSAlgorithm (unsigned num_threads,
+                              unsigned cutoff_size):
         num_threads(num_threads), cutoff_size(cutoff_size)
     {};
 
@@ -44,24 +44,24 @@ namespace agdmhs {
         RSCounters counters;
 
         // Candidate hitting set
-        bitset S (H.num_verts());
+        Hypergraph::Edge S (H.num_verts());
         S.reset(); // Initially empty
 
         // Which edges each vertex is critical for
         Hypergraph crit (H.num_edges(), H.num_verts());
 
         // Which edges are uncovered
-        bitset uncov (H.num_edges());
+        Hypergraph::Edge uncov (H.num_edges());
         uncov.set(); // Initially full
 
         // Which vertices are known to be violating
-        bitset violating_vertices (H.num_verts());
+        Hypergraph::Edge violating_vertices (H.num_verts());
 
         // Tranpose of H
         Hypergraph T = H.transpose();
 
         // Queue to store hitting sets as they are generated
-        bsqueue hitting_sets;
+        Hypergraph::EdgeQueue hitting_sets;
 
         // RUN ALGORITHM
         {
@@ -73,7 +73,7 @@ namespace agdmhs {
 
         // Gather results
         Hypergraph Htrans(H.num_verts());
-        bitset result;
+        Hypergraph::Edge result;
         while (hitting_sets.try_dequeue(result)) {
             Htrans.add_edge(result);
         }
@@ -83,16 +83,16 @@ namespace agdmhs {
         return Htrans;
     };
 
-    bool RSAlgorithm::any_edge_critical_after_i(const hindex& i,
-                                                const bitset& S,
+    bool RSAlgorithm::any_edge_critical_after_i(Hypergraph::EdgeIndex i,
+                                                const Hypergraph::Edge& S,
                                                 const Hypergraph& crit) {
         /*
           Return true if any vertex in S has its first critical edge
           after i.
         */
-        hindex w = S.find_first();
-        while (w != bitset::npos) {
-            hindex first_crit_edge = crit[w].find_first();
+        Hypergraph::EdgeIndex w = S.find_first();
+        while (w != Hypergraph::Edge::npos) {
+            Hypergraph::EdgeIndex first_crit_edge = crit[w].find_first();
             if (first_crit_edge >= i) {
                 return true;
             }
@@ -105,11 +105,11 @@ namespace agdmhs {
     void RSAlgorithm::extend_or_confirm_set(const Hypergraph& H,
                                             const Hypergraph& T,
                                             RSCounters& counters,
-                                            bsqueue& hitting_sets,
-                                            bitset& S,
+                                            Hypergraph::EdgeQueue& hitting_sets,
+                                            Hypergraph::Edge& S,
                                             Hypergraph& crit,
-                                            bitset& uncov,
-                                            const bitset& violating_vertices) const {
+                                            Hypergraph::Edge& uncov,
+                                            const Hypergraph::Edge& violating_vertices) const {
         ++counters.iterations;
 
         // Input specification
@@ -117,14 +117,14 @@ namespace agdmhs {
         assert(cutoff_size == 0 or S.count() < cutoff_size); // If we're using a cutoff, S must not be too large
 
         // Otherwise, get an uncovered edge
-        hindex search_edge = uncov.find_first(); // Just use the first set in uncov
-        bitset e = H[search_edge];
+        Hypergraph::EdgeIndex search_edge = uncov.find_first(); // Just use the first set in uncov
+        Hypergraph::Edge e = H[search_edge];
 
         // Store the indices in the edge for iteration
-        bitset new_violating_vertices (H.num_verts());
-        std::deque<hindex> search_indices;
-        hindex v = e.find_first();
-        while (v != bitset::npos) {
+        Hypergraph::Edge new_violating_vertices (H.num_verts());
+        std::deque<Hypergraph::EdgeIndex> search_indices;
+        Hypergraph::EdgeIndex v = e.find_first();
+        while (v != Hypergraph::Edge::npos) {
             // If v is already known violating, we skip it entirely
             bool known_violating = violating_vertices.test(v);
             if (not known_violating and vertex_would_violate(crit, uncov, H, T, S, v)) {
@@ -164,10 +164,10 @@ namespace agdmhs {
                     // don't waste time with small jobs.
                     // Each one gets its own copy of S, CAND, crit, and uncov
                     ++counters.tasks_waiting;
-                    bitset new_S = S;
+                    Hypergraph::Edge new_S = S;
                     Hypergraph new_crit = crit;
-                    bitset new_uncov = uncov;
-                    bitset new_viol = violating_vertices | new_violating_vertices;
+                    Hypergraph::Edge new_uncov = uncov;
+                    Hypergraph::Edge new_viol = violating_vertices | new_violating_vertices;
 #pragma omp task shared(H, T, counters, hitting_sets) // Start a new task
                     {
                     --counters.tasks_waiting;

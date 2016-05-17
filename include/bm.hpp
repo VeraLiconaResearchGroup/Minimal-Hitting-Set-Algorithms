@@ -24,23 +24,23 @@
 
 namespace agdmhs {
     class ParBMAlgorithm: public FKAlgorithm {
-        size_t num_threads;
+        unsigned num_threads;
 
     public:
         ParBMAlgorithm ();
-        ParBMAlgorithm (size_t num_threads);
+        ParBMAlgorithm (unsigned num_threads);
         Hypergraph transversal (const Hypergraph& H) const override;
 
     private:
-        void find_new_hses(const Hypergraph& H, const Hypergraph& G, const bitset& c, bsqueue& results) const;
-        void find_new_hses_fork(const Hypergraph& H, const Hypergraph& G, const Hypergraph& C, bsqueue& results) const;
-        void minimize_new_hses (const Hypergraph& H, const Hypergraph& G, bsqueue& new_hses, bsqueue& new_mhses) const;
+        void find_new_hses(const Hypergraph& H, const Hypergraph& G, const Hypergraph::Edge& c, Hypergraph::EdgeQueue& results) const;
+        void find_new_hses_fork(const Hypergraph& H, const Hypergraph& G, const Hypergraph& C, Hypergraph::EdgeQueue& results) const;
+        void minimize_new_hses (const Hypergraph& H, const Hypergraph& G, Hypergraph::EdgeQueue& new_hses, Hypergraph::EdgeQueue& new_mhses) const;
 
-        static Hypergraph l4_full_cover (const Hypergraph& H, const bitset& edge);
-        static Hypergraph l5_full_cover (const Hypergraph& H, const bitset& base_transversal);
-        static bitset find_missed_edge (const Hypergraph& H, const bitset& I);
-        static bitset find_subset_edge (const Hypergraph& H, const bitset& I);
-        static bitset minimize_new_hs (const Hypergraph& H, bitset new_hs);
+        static Hypergraph l4_full_cover (const Hypergraph& H, const Hypergraph::Edge& edge);
+        static Hypergraph l5_full_cover (const Hypergraph& H, const Hypergraph::Edge& base_transversal);
+        static Hypergraph::Edge find_missed_edge (const Hypergraph& H, const Hypergraph::Edge& I);
+        static Hypergraph::Edge find_subset_edge (const Hypergraph& H, const Hypergraph::Edge& I);
+        static Hypergraph::Edge minimize_new_hs (const Hypergraph& H, Hypergraph::Edge new_hs);
     };
 }
 

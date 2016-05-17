@@ -25,8 +25,6 @@
 #include <map>
 
 namespace agdmhs {
-    typedef std::map<hindex, bitset> hsetmap;
-
     class vertex_violating_exception: public std::exception {
         virtual const char* what() const throw() {
             return "The vertex was violating for this candidate hitting set.";
@@ -35,9 +33,11 @@ namespace agdmhs {
 
     class SHDAlgorithm: public MHSAlgorithm {
     protected:
-        bool vertex_would_violate (const Hypergraph& crit, const bitset& uncov, const Hypergraph& H, const Hypergraph& T, const bitset& S, const hindex v) const;
-        hsetmap update_crit_and_uncov(Hypergraph& crit, bitset& uncov, const Hypergraph& H, const Hypergraph& T, const bitset& S, const hindex v) const ;
-        void restore_crit_and_uncov(Hypergraph& crit, bitset& uncov, const bitset& S, const hsetmap& critmark, const hindex v) const;
+        using hsetmap = std::map<Hypergraph::EdgeIndex, Hypergraph::Edge>;
+
+        bool vertex_would_violate (const Hypergraph& crit, const Hypergraph::Edge& uncov, const Hypergraph& H, const Hypergraph& T, const Hypergraph::Edge& S, Hypergraph::EdgeIndex v) const;
+        hsetmap update_crit_and_uncov(Hypergraph& crit, Hypergraph::Edge& uncov, const Hypergraph& H, const Hypergraph& T, const Hypergraph::Edge& S, Hypergraph::EdgeIndex v) const ;
+        void restore_crit_and_uncov(Hypergraph& crit, Hypergraph::Edge& uncov, const Hypergraph::Edge& S, const hsetmap& critmark, Hypergraph::EdgeIndex v) const;
     };
 }
 

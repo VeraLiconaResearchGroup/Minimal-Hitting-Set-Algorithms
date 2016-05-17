@@ -31,14 +31,14 @@
 #include <boost/log/expressions.hpp>
 
 namespace agdmhs {
-    bitset FKAlgorithm::hitting_condition_check (const Hypergraph& F,
-                                                 const Hypergraph& G) {
+    Hypergraph::Edge FKAlgorithm::hitting_condition_check (const Hypergraph& F,
+                                                           const Hypergraph& G) {
         // Check whether all edges in F and G intersect
         // per FK (eq. 1.1)
         for (auto const& Fedge: F) {
             for (auto const& Gedge: G) {
                 if (not Fedge.intersects(Gedge)) {
-                    bitset omit_set = F.verts_covered() - Fedge;
+                    Hypergraph::Edge omit_set = F.verts_covered() - Fedge;
 
                     BOOST_LOG_TRIVIAL(trace) << "Hitting condition failed!"
                                              << "\nF edge:\t" << Fedge
@@ -49,41 +49,41 @@ namespace agdmhs {
             }
         }
 
-        bitset omit_set(F.num_verts());
+        Hypergraph::Edge omit_set(F.num_verts());
         return omit_set;
     }
 
-    bitset FKAlgorithm::coverage_condition_check (const Hypergraph& F,
-                                                  const Hypergraph& G) {
+    Hypergraph::Edge FKAlgorithm::coverage_condition_check (const Hypergraph& F,
+                                                            const Hypergraph& G) {
         // Check whether F and G cover the same vertices
         // per FK (eq. 1.2)
-        bitset Fcovered = F.verts_covered();
-        bitset Gcovered = G.verts_covered();
+        Hypergraph::Edge Fcovered = F.verts_covered();
+        Hypergraph::Edge Gcovered = G.verts_covered();
 
-        bitset Fsurplus = Fcovered - Gcovered;
-        bitset Gsurplus = Gcovered - Fcovered;
+        Hypergraph::Edge Fsurplus = Fcovered - Gcovered;
+        Hypergraph::Edge Gsurplus = Gcovered - Fcovered;
 
         if (Fsurplus.any()) {
-            hindex surplus_vertex = Fsurplus.find_first();
+            Hypergraph::EdgeIndex surplus_vertex = Fsurplus.find_first();
             for (auto const& edge: F) {
                 if (edge.test(surplus_vertex)) {
                     BOOST_LOG_TRIVIAL(trace) << "Coverage condition 1 failed: G missing vertex " << surplus_vertex << "."
                                              << "\nF edge:\t\t" << edge;
 
-                    bitset omit_set = edge;
+                    Hypergraph::Edge omit_set = edge;
                     omit_set.reset(surplus_vertex);
                     return omit_set;
                 }
             }
             throw std::runtime_error("Invalid state in coverage condition 1.");
         } else if (Gsurplus.any()) {
-            hindex surplus_vertex = Gsurplus.find_first();
+            Hypergraph::EdgeIndex surplus_vertex = Gsurplus.find_first();
             for (auto const& edge: G) {
                 if (edge.test(surplus_vertex)) {
                     BOOST_LOG_TRIVIAL(trace) << "Coverage condition 2 failed: F missing vertex " << surplus_vertex << "."
                                              << "\nG edge:\t\t" << edge;
 
-                    bitset omit_set = (Fcovered | Gcovered)^ edge;
+                    Hypergraph::Edge omit_set = (Fcovered | Gcovered)^ edge;
                     omit_set.set(surplus_vertex);
                     return omit_set;
                 }
@@ -91,12 +91,12 @@ namespace agdmhs {
             throw std::runtime_error("Invalid state in coverage condition 2.");
         }
 
-        bitset omit_set (F.num_verts());
+        Hypergraph::Edge omit_set (F.num_verts());
         return omit_set;
     }
 
-    bitset FKAlgorithm::edge_size_check (const Hypergraph& F,
-                                         const Hypergraph& G) {
+    Hypergraph::Edge FKAlgorithm::edge_size_check (const Hypergraph& F,
+                                                   const Hypergraph& G) {
         // Check whether F and G satisfy the edge size condition
         // per FK (eq. 1.3)
         for (auto const& Fedge: F) {
@@ -105,9 +105,9 @@ namespace agdmhs {
                 BOOST_LOG_TRIVIAL(trace) << "Size condition 1 failed."
                                          << "\nF edge:\t\t" << Fedge;
 
-                hindex v_index = Fedge.find_first();
-                while (v_index < bitset::npos) {
-                    bitset omit_set = Fedge;
+                Hypergraph::EdgeIndex v_index = Fedge.find_first();
+                while (v_index < Hypergraph::Edge::npos) {
+                    Hypergraph::Edge omit_set = Fedge;
                     omit_set.reset(v_index);
 
                     bool omit_set_is_valid = true;
@@ -135,9 +135,9 @@ namespace agdmhs {
                 // TODO: What is the omit_set?
                 BOOST_LOG_TRIVIAL(trace) << "Size condition 2 failed."
                                          << "\nG edge:\t" << Gedge;
-                hindex v_index = Gedge.find_first();
-                while (v_index < bitset::npos) {
-                    bitset omit_set = Gedge;
+                Hypergraph::EdgeIndex v_index = Gedge.find_first();
+                while (v_index < Hypergraph::Edge::npos) {
+                    Hypergraph::Edge omit_set = Gedge;
                     omit_set.reset(v_index);
 
                     for (auto const& Fedge: F) {
@@ -153,12 +153,12 @@ namespace agdmhs {
             }
         }
 
-        bitset omit_set (F.num_verts());
+        Hypergraph::Edge omit_set (F.num_verts());
         return omit_set;
     }
 
-    bitset FKAlgorithm::satisfiability_count_check (const Hypergraph& F,
-                                                    const Hypergraph& G) {
+    Hypergraph::Edge FKAlgorithm::satisfiability_count_check (const Hypergraph& F,
+                                                              const Hypergraph& G) {
         // Check whether the satisfiability count condition is met
         // per FK (eq. 2.1)
         // This is a subtle algebraic condition, but it is the heart of the FK
@@ -175,9 +175,9 @@ namespace agdmhs {
         }
 
         if (checkvalue < 1) {
-            bitset omit_set (F.num_verts());
-            for (hindex i = 0; i < F.num_verts(); ++i) {
-                bitset extended_omit_set = omit_set;
+            Hypergraph::Edge omit_set (F.num_verts());
+            for (Hypergraph::EdgeIndex i = 0; i < F.num_verts(); ++i) {
+                Hypergraph::Edge extended_omit_set = omit_set;
                 extended_omit_set.set(i);
 
                 unsigned long oldcount = 0;
@@ -213,18 +213,18 @@ namespace agdmhs {
             return omit_set;
         }
 
-        bitset omit_set (F.num_verts());
+        Hypergraph::Edge omit_set (F.num_verts());
         return omit_set;
     }
 
-    bitset FKAlgorithm::small_hypergraphs_check (const Hypergraph& F,
-                                                 const Hypergraph& G) {
+    Hypergraph::Edge FKAlgorithm::small_hypergraphs_check (const Hypergraph& F,
+                                                           const Hypergraph& G) {
         // Check whether F or G is small enough to handle manually.
         if (F.num_edges() == 0 or G.num_edges() == 0) {
             BOOST_LOG_TRIVIAL(trace) << "Either F or G is null.";
 
             // Any combination will do as a omit_set
-            bitset omit_set (F.num_verts());
+            Hypergraph::Edge omit_set (F.num_verts());
             omit_set.set();
             return omit_set;
         }
@@ -234,30 +234,30 @@ namespace agdmhs {
             BOOST_LOG_TRIVIAL(trace) << "Either F or G is unital.";
 
             // Return the empty edge as a special signal
-            bitset omit_set (F.num_edges());
+            Hypergraph::Edge omit_set (F.num_edges());
             return omit_set;
         }
 
-        bitset omit_set (F.num_verts());
+        Hypergraph::Edge omit_set (F.num_verts());
         return omit_set;
     }
 
-    hindex FKAlgorithm::most_frequent_vertex (const Hypergraph& F,
-                                              const Hypergraph& G) {
+    Hypergraph::EdgeIndex FKAlgorithm::most_frequent_vertex (const Hypergraph& F,
+                                                const Hypergraph& G) {
         size_t n = F.num_verts();
         std::vector<int> freqs(n);
 
         for (auto const& edge: F) {
-            hindex vertex = edge.find_first();
-            while (vertex != bitset::npos) {
+            Hypergraph::EdgeIndex vertex = edge.find_first();
+            while (vertex != Hypergraph::Edge::npos) {
                 ++freqs[vertex];
                 vertex = edge.find_next(vertex);
             }
         }
 
         for (auto const& edge: G) {
-            hindex vertex = edge.find_first();
-            while (vertex != bitset::npos) {
+            Hypergraph::EdgeIndex vertex = edge.find_first();
+            while (vertex != Hypergraph::Edge::npos) {
                 ++freqs[vertex];
                 vertex = edge.find_next(vertex);
             }
@@ -265,7 +265,7 @@ namespace agdmhs {
 
         // Then we find the largest one
         auto&& max_freq_vert_iterator = std::max_element(freqs.begin(), freqs.end());
-        hindex max_freq_vert = std::distance(freqs.begin(), max_freq_vert_iterator);
+        Hypergraph::EdgeIndex max_freq_vert = std::distance(freqs.begin(), max_freq_vert_iterator);
 
         BOOST_LOG_TRIVIAL(trace) << "Most frequent vertex: " << max_freq_vert;
 
@@ -299,7 +299,7 @@ namespace agdmhs {
     }
 
     std::pair<Hypergraph, Hypergraph> FKAlgorithm::split_hypergraph_over_vertex (const Hypergraph& H,
-                                                                                 const hindex& v) {
+                                                                                 Hypergraph::EdgeIndex v) {
         // Split H into two hypergraphs based on the vertex v:
         // H0 gets the edges which contained v, but with v removed from each
         // H1 gets the edges which did not contain v
@@ -309,7 +309,7 @@ namespace agdmhs {
 
         for (auto const& edge: H) {
             if (edge.test(v)) {
-                bitset newedge = edge;
+                Hypergraph::Edge newedge = edge;
                 newedge.reset(v);
                 H0.add_edge(newedge);
             } else {
@@ -321,9 +321,9 @@ namespace agdmhs {
         return result;
     }
 
-    bitset FKAlgorithm::minimize_new_hs (const Hypergraph& F,
-                                         const Hypergraph& G,
-                                         bitset S) {
+    Hypergraph::Edge FKAlgorithm::minimize_new_hs (const Hypergraph& F,
+                                                   const Hypergraph& G,
+                                                   Hypergraph::Edge S) {
         /**
            Given a hypergraph F, a collection of MHSs G, and new hitting set S,
            find a new MHS which is a subset of S.
@@ -342,7 +342,7 @@ namespace agdmhs {
         // NOTE: This is a sneaky hack! S.count() is recomputed each time.
         for (size_t i = 0; i < S.count(); ++i) {
             // Find the ith variable of S
-            hindex vertex = S.find_first();
+            Hypergraph::EdgeIndex vertex = S.find_first();
             for (size_t j = 0; j < i; ++j) {
                 vertex = S.find_next(vertex);
             }

@@ -25,18 +25,18 @@
 namespace agdmhs {
     class FKAlgorithm: public MHSAlgorithm {
     protected:
-        static bitset hitting_condition_check (const Hypergraph& F, const Hypergraph& G);
-        static bitset coverage_condition_check (const Hypergraph& F, const Hypergraph& G);
-        static bitset edge_size_check (const Hypergraph& F, const Hypergraph& G);
-        static bitset satisfiability_count_check (const Hypergraph& F, const Hypergraph& G);
-        static bitset small_hypergraphs_check (const Hypergraph& F, const Hypergraph& G);
+        static Hypergraph::Edge hitting_condition_check (const Hypergraph& F, const Hypergraph& G);
+        static Hypergraph::Edge coverage_condition_check (const Hypergraph& F, const Hypergraph& G);
+        static Hypergraph::Edge edge_size_check (const Hypergraph& F, const Hypergraph& G);
+        static Hypergraph::Edge satisfiability_count_check (const Hypergraph& F, const Hypergraph& G);
+        static Hypergraph::Edge small_hypergraphs_check (const Hypergraph& F, const Hypergraph& G);
 
-        static hindex most_frequent_vertex (const Hypergraph& F, const Hypergraph& G);
+        static Hypergraph::EdgeIndex most_frequent_vertex (const Hypergraph& F, const Hypergraph& G);
 
         static Hypergraph minimized_union (const Hypergraph& F, const Hypergraph& G);
 
-        static std::pair<Hypergraph, Hypergraph> split_hypergraph_over_vertex (const Hypergraph& H, const hindex& v);
-        static bitset minimize_new_hs (const Hypergraph& F, const Hypergraph& G, bitset S);
+        static std::pair<Hypergraph, Hypergraph> split_hypergraph_over_vertex (const Hypergraph& H, Hypergraph::EdgeIndex v);
+        static Hypergraph::Edge minimize_new_hs (const Hypergraph& F, const Hypergraph& G, Hypergraph::Edge S);
     };
 }
 

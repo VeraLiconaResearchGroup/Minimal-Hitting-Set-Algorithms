@@ -29,7 +29,7 @@ namespace agdmhs {
         Hypergraph transversal (const Hypergraph& H) const override;
 
     private:
-        static bitset find_omit_set (const Hypergraph& F, const Hypergraph& G);
+        static Hypergraph::Edge find_omit_set (const Hypergraph& F, const Hypergraph& G);
     };
 }
 
