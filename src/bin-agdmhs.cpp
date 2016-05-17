@@ -25,6 +25,7 @@
 #include "rs.hpp"
 
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -95,17 +96,17 @@ int main (int argc, char * argv[]) {
     // Run chosen algorithm
     std::string algname = vm["algorithm"].as<std::string>();
 
-    agdmhs::MHSAlgorithm* mhs_algorithm;
+    std::unique_ptr<agdmhs::MHSAlgorithm> mhs_algorithm;
     if (algname == "berge") {
-        mhs_algorithm = new agdmhs::BergeAlgorithm(cutoff_size);
+        mhs_algorithm = std::unique_ptr<agdmhs::MHSAlgorithm> (new agdmhs::BergeAlgorithm(cutoff_size));
     } else if (algname == "bm") {
-        mhs_algorithm = new agdmhs::ParBMAlgorithm (num_threads);
+        mhs_algorithm = std::unique_ptr<agdmhs::MHSAlgorithm> (new agdmhs::ParBMAlgorithm (num_threads));
     } else if (algname == "fka") {
-        mhs_algorithm = new agdmhs::FKAlgorithmA();
+        mhs_algorithm = std::unique_ptr<agdmhs::MHSAlgorithm> (new agdmhs::FKAlgorithmA());
     } else if (algname == "mmcs" or algname == "pmmcs") {
-        mhs_algorithm = new agdmhs::MMCSAlgorithm(num_threads, cutoff_size);
+        mhs_algorithm = std::unique_ptr<agdmhs::MHSAlgorithm> (new agdmhs::MMCSAlgorithm(num_threads, cutoff_size));
     } else if (algname == "rs" or algname == "prs") {
-        mhs_algorithm = new agdmhs::RSAlgorithm(num_threads, cutoff_size);
+        mhs_algorithm = std::unique_ptr<agdmhs::MHSAlgorithm> (new agdmhs::RSAlgorithm(num_threads, cutoff_size));
     } else {
         std::stringstream error_message;
         error_message << "Did not recognize requested algorithm " << algname << ".";
