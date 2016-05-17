@@ -24,6 +24,7 @@
 namespace agdmhs {
     class MHSAlgorithm {
     public:
+        virtual ~MHSAlgorithm () {};
         virtual Hypergraph transversal (const Hypergraph& H) const = 0;
     };
 }
