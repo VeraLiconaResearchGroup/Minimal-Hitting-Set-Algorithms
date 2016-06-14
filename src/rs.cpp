@@ -34,8 +34,9 @@
 // TODO: Input specifications with <cassert>
 namespace agdmhs {
     RSAlgorithm::RSAlgorithm (unsigned num_threads,
-                              unsigned cutoff_size):
-        num_threads(num_threads), cutoff_size(cutoff_size)
+                              unsigned cutoff_size,
+                              bool count_only):
+        num_threads(num_threads), cutoff_size(cutoff_size), count_only(count_only)
     {};
 
     Hypergraph RSAlgorithm::transversal (const Hypergraph& H) const {
@@ -73,12 +74,14 @@ namespace agdmhs {
 
         // Gather results
         Hypergraph Htrans(H.num_verts());
-        Hypergraph::Edge result;
-        while (hitting_sets.try_dequeue(result)) {
-            Htrans.add_edge(result);
+        if (not count_only) {
+            Hypergraph::Edge result;
+            while (hitting_sets.try_dequeue(result)) {
+                Htrans.add_edge(result);
+            }
         }
 
-        BOOST_LOG_TRIVIAL(info) << "pRS complete: " << counters.iterations << " iterations, " << counters.violators << " violating verts, " << counters.critical_fails << " critical check failures, " << counters.update_loops << " update loops.";
+        BOOST_LOG_TRIVIAL(info) << "pRS complete: " << counters.mhses_found << " MHSes found, " << counters.iterations << " iterations, " << counters.violators << " violating verts, " << counters.critical_fails << " critical check failures, " << counters.update_loops << " update loops.";
 
         return Htrans;
     };
@@ -156,7 +159,10 @@ namespace agdmhs {
 
             if (uncov.none()) {
                 // In this case, S is a valid hitting set, so we store it
-                hitting_sets.enqueue(S);
+                ++counters.mhses_found;
+                if (not count_only) {
+                    hitting_sets.enqueue(S);
+                }
             } else if (cutoff_size == 0 or S.count() < cutoff_size) {
                 // In this case, S is not yet a hitting set but is not too large either
                 if (counters.tasks_waiting < 4 and uncov.size() > 2) {

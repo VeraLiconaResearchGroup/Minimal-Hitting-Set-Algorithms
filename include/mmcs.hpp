@@ -26,18 +26,20 @@
 
 namespace agdmhs {
     struct MMCSCounters {
-        std::atomic<unsigned> iterations;
-        std::atomic<unsigned> violators;
-        std::atomic<unsigned> update_loops;
-        std::atomic<unsigned> tasks_waiting;
+        std::atomic<unsigned> mhses_found {0};
+        std::atomic<unsigned> iterations {0};
+        std::atomic<unsigned> violators {0};
+        std::atomic<unsigned> update_loops {0};
+        std::atomic<unsigned> tasks_waiting {0};
     };
 
     class MMCSAlgorithm: public SHDAlgorithm {
         unsigned num_threads;
         unsigned cutoff_size;
+        bool count_only;
 
     public:
-        MMCSAlgorithm (unsigned num_threads, unsigned cutoff_size);
+        MMCSAlgorithm (unsigned num_threads, unsigned cutoff_size, bool count_only = false);
         Hypergraph transversal (const Hypergraph& H) const override;
 
     private:

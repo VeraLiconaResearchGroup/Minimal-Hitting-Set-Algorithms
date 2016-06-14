@@ -26,19 +26,21 @@
 
 namespace agdmhs {
     struct RSCounters {
-        std::atomic<unsigned> iterations;
-        std::atomic<unsigned> violators;
-        std::atomic<unsigned> critical_fails;
-        std::atomic<unsigned> update_loops;
-        std::atomic<unsigned> tasks_waiting;
+        std::atomic<unsigned> mhses_found {0};
+        std::atomic<unsigned> iterations {0};
+        std::atomic<unsigned> violators {0};
+        std::atomic<unsigned> critical_fails {0};
+        std::atomic<unsigned> update_loops {0};
+        std::atomic<unsigned> tasks_waiting {0};
     };
 
     class RSAlgorithm: public SHDAlgorithm {
         unsigned num_threads;
         unsigned cutoff_size;
+        bool count_only;
 
     public:
-        RSAlgorithm (unsigned num_threads, unsigned cutoff_size);
+        RSAlgorithm (unsigned num_threads, unsigned cutoff_size, bool count_only = false);
         Hypergraph transversal (const Hypergraph& H) const override;
 
     private:

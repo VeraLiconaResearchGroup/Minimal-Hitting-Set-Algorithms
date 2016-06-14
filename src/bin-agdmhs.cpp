@@ -46,8 +46,9 @@ int main (int argc, char * argv[]) {
         ("output", po::value<std::string>()->default_value("out.dat"), "Output transversals file")
         ("verbosity,v", po::value<int>()->default_value(0)->implicit_value(1), "Write verbose debugging output (-v2 for trace output)")
         ("algorithm,a", po::value<std::string>()->default_value("pmmcs"), "Algorithm to use (pmmcs, prs, fka, berge, bm)")
-        ("num-threads,t", po::value<int>()->default_value(1), "Number of threads to run in parallel")
-        ("cutoff-size,c", po::value<int>()->default_value(0), "Maximum size set to return (0: no limit)");
+        ("num-threads,t", po::value<int>()->default_value(1), "Number of threads to run in parallel. Supported by pmmcs, prs, and bm; ignored by other algorithms.")
+        ("cutoff-size,c", po::value<int>()->default_value(0), "Maximum size set to return (0: no limit). Supported by pmmcs, prs, and berge; ignored by other algorithms.")
+        ("count-only", po::bool_switch(), "If set, count MHSes but do not store them. Useful in cases where complete MHS set will not fit in memory. Supported by pmmcs and prs; ignored by other algorithms.");
 
     po::positional_options_description p;
     p.add("input", 1);
@@ -62,6 +63,8 @@ int main (int argc, char * argv[]) {
 
     const size_t num_threads = (vm["num-threads"].as<int>());
     const size_t cutoff_size = (vm["cutoff-size"].as<int>());
+
+    const bool count_only = vm["count-only"].as<bool>();
 
     po::notify(vm);
 
@@ -104,9 +107,9 @@ int main (int argc, char * argv[]) {
     } else if (algname == "fka") {
         mhs_algorithm = std::unique_ptr<agdmhs::MHSAlgorithm> (new agdmhs::FKAlgorithmA());
     } else if (algname == "mmcs" or algname == "pmmcs") {
-        mhs_algorithm = std::unique_ptr<agdmhs::MHSAlgorithm> (new agdmhs::MMCSAlgorithm(num_threads, cutoff_size));
+        mhs_algorithm = std::unique_ptr<agdmhs::MHSAlgorithm> (new agdmhs::MMCSAlgorithm(num_threads, cutoff_size, count_only));
     } else if (algname == "rs" or algname == "prs") {
-        mhs_algorithm = std::unique_ptr<agdmhs::MHSAlgorithm> (new agdmhs::RSAlgorithm(num_threads, cutoff_size));
+        mhs_algorithm = std::unique_ptr<agdmhs::MHSAlgorithm> (new agdmhs::RSAlgorithm(num_threads, cutoff_size, count_only));
     } else {
         std::stringstream error_message;
         error_message << "Did not recognize requested algorithm " << algname << ".";
@@ -116,14 +119,16 @@ int main (int argc, char * argv[]) {
     BOOST_LOG_TRIVIAL(debug) << "Running algorithm " << algname;
     agdmhs::Hypergraph Htrans = mhs_algorithm->transversal(H);
 
-    std::cout << "Found " << Htrans.num_edges() << " hitting sets." << std::endl;
-    BOOST_LOG_TRIVIAL(debug) << "Algorithm complete.";
+    if (not count_only) {
+        std::cout << "Found " << Htrans.num_edges() << " hitting sets." << std::endl;
+        BOOST_LOG_TRIVIAL(debug) << "Algorithm complete.";
 
-    // Print results
-    BOOST_LOG_TRIVIAL(debug) << "Writing result file.";
-    std::string output_file(vm["output"].as<std::string>());
-    Htrans.write_to_file(output_file);
-    BOOST_LOG_TRIVIAL(debug) << "Writing complete.";
+        // Print results
+        BOOST_LOG_TRIVIAL(debug) << "Writing result file.";
+        std::string output_file(vm["output"].as<std::string>());
+        Htrans.write_to_file(output_file);
+        BOOST_LOG_TRIVIAL(debug) << "Writing complete.";
+    }
 
     return 0;
 }
